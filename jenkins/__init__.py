@@ -46,6 +46,7 @@
 See examples at :doc:`examples`
 '''
 
+import copy
 import json
 import logging
 import os
@@ -100,6 +101,7 @@ WHOAMI_URL = 'me/api/json?depth=%(depth)s'
 JOBS_QUERY = '?tree=%s'
 JOBS_QUERY_TREE = 'jobs[url,color,name,%s]'
 JOB_INFO = '%(folder_url)sjob/%(short_name)s/api/json?depth=%(depth)s'
+JOB_INFO_TREE = '%(folder_url)sjob/%(short_name)s/api/json?tree=lastStableBuild[*]'
 JOB_NAME = '%(folder_url)sjob/%(short_name)s/api/json?tree=name'
 ALL_BUILDS = '%(folder_url)sjob/%(short_name)s/api/json?tree=allBuilds[number,url]'
 Q_INFO = 'queue/api/json?depth=0'
@@ -118,6 +120,7 @@ BUILD_JOB = '%(folder_url)sjob/%(short_name)s/build'
 STOP_BUILD = '%(folder_url)sjob/%(short_name)s/%(number)s/stop'
 BUILD_WITH_PARAMS_JOB = '%(folder_url)sjob/%(short_name)s/buildWithParameters'
 BUILD_INFO = '%(folder_url)sjob/%(short_name)s/%(number)d/api/json?depth=%(depth)s'
+BUILD_INFO_TREE = '%(folder_url)sjob/%(short_name)s/%(number)d/api/json?tree=*[*]'
 BUILD_CONSOLE_OUTPUT = '%(folder_url)sjob/%(short_name)s/%(number)d/consoleText'
 BUILD_ENV_VARS = '%(folder_url)sjob/%(short_name)s/%(number)d/injectedEnvVars/api/json' + \
     '?depth=%(depth)s'
@@ -462,8 +465,10 @@ class Jenkins(object):
         '''
         folder_url, short_name = self._get_job_folder(name)
         try:
+            localscopy = copy.copy(locals())
+            jobinfo_url = self._build_url(JOB_INFO_TREE, locals())
             response = self.jenkins_open(requests.Request(
-                'GET', self._build_url(JOB_INFO, locals())
+                'GET', jobinfo_url
             ))
             if response:
                 if fetch_all_builds:
@@ -645,8 +650,10 @@ class Jenkins(object):
         '''  # noqa: E501
         folder_url, short_name = self._get_job_folder(name)
         try:
+            localscopy = copy.copy(locals())
+            buildinfo_url = self._build_url(BUILD_INFO_TREE, locals())
             response = self.jenkins_open(requests.Request(
-                'GET', self._build_url(BUILD_INFO, locals())
+                'GET', buildinfo_url
             ))
             if response:
                 return json.loads(response)
@@ -1461,7 +1468,7 @@ class Jenkins(object):
                     raise
             for executor in info['executors']:
                 executable = executor['currentExecutable']
-                if executable and 'PlaceholderTask' not in executable.get('_class', ''):
+                if executable and 'number' in executable:
                     executor_number = executor['number']
                     build_number = executable['number']
                     url = executable['url']
