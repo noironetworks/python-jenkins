@@ -46,7 +46,6 @@
 See examples at :doc:`examples`
 '''
 
-import copy
 import json
 import logging
 import os
@@ -120,7 +119,7 @@ BUILD_JOB = '%(folder_url)sjob/%(short_name)s/build'
 STOP_BUILD = '%(folder_url)sjob/%(short_name)s/%(number)s/stop'
 BUILD_WITH_PARAMS_JOB = '%(folder_url)sjob/%(short_name)s/buildWithParameters'
 BUILD_INFO = '%(folder_url)sjob/%(short_name)s/%(number)d/api/json?depth=%(depth)s'
-BUILD_INFO_TREE = '%(folder_url)sjob/%(short_name)s/%(number)d/api/json?tree=*[*]'
+BUILD_INFO_TREE = '%(folder_url)sjob/%(short_name)s/%(number)d/api/json?tree=*[*[*[*]]]'
 BUILD_CONSOLE_OUTPUT = '%(folder_url)sjob/%(short_name)s/%(number)d/consoleText'
 BUILD_ENV_VARS = '%(folder_url)sjob/%(short_name)s/%(number)d/injectedEnvVars/api/json' + \
     '?depth=%(depth)s'
@@ -465,10 +464,8 @@ class Jenkins(object):
         '''
         folder_url, short_name = self._get_job_folder(name)
         try:
-            localscopy = copy.copy(locals())
-            jobinfo_url = self._build_url(JOB_INFO_TREE, locals())
             response = self.jenkins_open(requests.Request(
-                'GET', jobinfo_url
+                'GET', self._build_url(JOB_INFO_TREE, locals())
             ))
             if response:
                 if fetch_all_builds:
@@ -650,10 +647,8 @@ class Jenkins(object):
         '''  # noqa: E501
         folder_url, short_name = self._get_job_folder(name)
         try:
-            localscopy = copy.copy(locals())
-            buildinfo_url = self._build_url(BUILD_INFO_TREE, locals())
             response = self.jenkins_open(requests.Request(
-                'GET', buildinfo_url
+                'GET', self._build_url(BUILD_INFO_TREE, locals())
             ))
             if response:
                 return json.loads(response)
